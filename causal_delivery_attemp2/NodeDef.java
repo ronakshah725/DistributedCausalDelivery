@@ -1,0 +1,18 @@
+package causal_delivery_attemp2;
+
+public class NodeDef {
+	int id;
+	String host;
+	int port;
+	public NodeDef(int nodeId, String host, int port) {
+
+		this.id = nodeId;
+		this.host = host;
+		this.port = port;
+	}
+	
+	public String toString() {
+
+		return id + "@" + host + ":" + port;
+	}
+}
