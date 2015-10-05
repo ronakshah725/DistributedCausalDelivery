@@ -89,7 +89,7 @@ public class ControllerNode {
 						
 						).println("sent new yay");
 				sock.close();
-				System.exit(1);
+//				System.exit(1);
 			}
 			else{
 				System.out.println(me.up);

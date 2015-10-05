@@ -20,15 +20,22 @@ public class Node {
 	String controllerHostName = "dc11.utdallas.edu";
 	boolean established = false;
 
+
 	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 
 	public void initStore() {
 		
 		for (int i = 1; i < 12; i++) {
 			store.put(i, new NodeDef(i, host, basePort + i));
-			
 		}
-
+	}
+	
+	public synchronized void setEst(boolean est){
+		established = est;
+	}
+	
+	public synchronized boolean getEst(){
+		return established; 
 	}
 
 	Node(String id) {
@@ -37,7 +44,7 @@ public class Node {
 		try {
 			this.host = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 		}
 		this.port = this.basePort + this.id;
@@ -60,47 +67,9 @@ public class Node {
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-		/*
-		 * For Text
-		 * 
-		 * 
-		
-		new Thread(new Runnable() {
-            public void run() {
-                for(int i = 1; i < 4; i++) {
-            		
-            		Node me = new Node(String.valueOf(i));
-            		System.out.println("Node " + me + " is running.");
-            		me.initStore();
-            		
-            		//tell controller that i am up
-            		new writingSocketThread(me, 11, "up" + "#" + getIDString(me.id)).start();;
 
-            		new ListenHandler(me).start();
-            		
-            		try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}	//wait for all to be up
-            		
-            		System.out.println("All done back in main of "+ i);
-                }
-            }
-        }).start();
 		
-		
-		 *End For Text
-		 * 
-		 * */
-		
-		
-		
-		
-		
-	
-		Node me = new Node("01");
+	Node me = new Node(args[0]);
 		System.out.println("Node " + me + " is running.");
 		me.initStore();
 		
@@ -111,9 +80,8 @@ public class Node {
 		
 		Thread.sleep(2000);	//wait for all to be up
 		
-		//rest of main
-		
-		
+		while(!me.getEst()){}
+		System.out.println("est : " + me.getEst());
 		
 	}
 
@@ -135,7 +103,7 @@ class ListenHandler extends Thread{
 			listener = new ServerSocket(nodeObj.port);
 			while (true) {
 
-				System.out.println("in listener");
+//				System.out.println("in listener");
 				Socket socket = listener.accept();
 				new ListenerService(socket, nodeObj).start();
 			}
@@ -177,12 +145,16 @@ class ListenerService extends Thread {
 			while ((msg = is.readLine()) != null) {
 
 				if (msg.contentEquals("establish")) {
-					n.established = true;
+					n.setEst(true);;
 					System.out.println("fuck off");
 
 				}
 				if (msg.startsWith("sent")) {
-					System.out.println("fuck off");
+					System.out.println("yay");
+
+				}
+				if (msg.startsWith("hi")) {
+					System.out.println("hi reached 1");
 
 				}
 
@@ -194,7 +166,7 @@ class ListenerService extends Thread {
 				is.close();
 				servSocket.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				
 				e.printStackTrace();
 			}
 
@@ -223,6 +195,7 @@ class writingSocketThread extends Thread {
 			String host = n.store.get(dstId).host;
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
+			System.out.println("Sending socket" + dstSocket);
 			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
 			out.println(msg);
 			System.out.println("Sending" + msg);

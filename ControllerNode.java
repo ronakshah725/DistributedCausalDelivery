@@ -1,3 +1,5 @@
+//before putting in threads to test
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,13 +15,13 @@ public class ControllerNode {
 
 	int id;
 	String host;
-	int noOfNodes = 10;
+	final  int noOfNodes = 2;
 	int port;
 	int basePort = 9000;
 	String controllerHostName = "dc11.utdallas.edu";
 	boolean init = true;
 	boolean isListening = true;
-	HashMap<Integer, Boolean> up = new HashMap<>();
+	HashMap<Integer,Boolean> up = new HashMap<>();
 
 	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 
@@ -40,81 +42,58 @@ public class ControllerNode {
 
 		return id + "@" + host + ":" + port;
 	}
-
-	public void initStore() {
-
-		// take from config file
-		for (int i = 1; i < 12; i++) {
-
+	
+	public void initStore(){
+		
+	//take from config file
+		for (int i = 1; i <=noOfNodes+1 ; i++) {
+			
 			store.put(i, new NodeDef(i, host, basePort + i));
 
 		}
-
+		
 	}
-
 	public static void main(String[] args) throws InterruptedException, IOException {
+		
 
 		ControllerNode me = new ControllerNode("11");
 
 		me.initStore();
 		System.out.println("Controller " + me + " is running.");
 
-		Thread thread2 = new Thread(new Runnable() {
-			public void run() {
-				ServerSocket listener;
 
-				try {
-					listener = new ServerSocket(me.port);
+		ServerSocket listener = new ServerSocket(me.port);
 
-					while (me.isListening) {
-						System.out.println("ghoomte raho");
-						Socket socket = listener.accept();
 
-						Thread t1 = new Listeners(socket, me);
-						t1.start();
-						t1.join();
-						if (me.up.size() != 1) {
-							continue;
-						} else if (me.up.size() == 1) {
-							System.out.println("in breaker");
-							me.isListening = false;
-							for (int i = 1; i <= 1; i++) {
-								new NotifyThreads(me, i, "establish", 0).start();
-							}
-							break;
-						}
-
-					}
-
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+		try {
+			while (me.isListening) {
+				// This node listens as a Server for the clients requests
+				System.out.println("ghoomte raho");
+				Socket socket = listener.accept();
+				// For every client request start a new thread
+				
+				Thread t1 = new Listeners(socket,me );
+				t1.start();
+				t1.join();
+	
+			}
+			if(me.up.size()==me.noOfNodes){
+				System.out.println("in breaker");
+				for (int i = 1; i<=me.noOfNodes; i++){
+					new NotifyThreads(me, i, "establish", 0).start();
 				}
-
-				finally {
-				}
+		
 
 			}
-		});
-		thread2.start();
-//		while (true) {
-//			if (me.up.size() != 1) {
-//				continue;
-//			} else if (me.up.size() == 1) {
-//				System.out.println("in breaker");
-//				me.isListening = false;
-//				for (int i = 1; i <= 1; i++) {
-//					new NotifyThreads(me, i, "establish", 0).start();
-//				}
-//				break;
-//			}
-//
-//		}
-
-		System.out.println(me.up);
+			else{
+				System.out.println(me.up);
+			}
+			
+		} 
+		
+		finally {
+			listener.close();
+		}
 
 	}
 
@@ -132,19 +111,20 @@ class NotifyThreads extends Thread {
 		this.dstId = dstId;
 		this.obj = obj;
 	}
-
+	
 	public void run() {
 		try {
-
+			System.out.println("in notify");
 			int port = n.store.get(dstId).port;
 			String host = n.store.get(dstId).host;
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
+			System.out.println("Sending socket" + dstSocket);
 			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
-
-			// out.println((String)obj);
+			
+			//out.println((String)obj);
 			out.println("establish");
-			System.out.println("sent est to " + dstId);
+			System.out.println("sent est");
 			dstSocket.close();
 
 		} catch (UnknownHostException e) {
@@ -160,8 +140,6 @@ class Listeners extends Thread {
 
 	Socket servSocket;
 	ControllerNode n;
-	String msg;
-	BufferedReader is;
 
 	public Listeners(Socket csocket, ControllerNode n) {
 		this.servSocket = csocket;
@@ -172,13 +150,22 @@ class Listeners extends Thread {
 
 		try {
 
-			is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
+			BufferedReader is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
 			Thread.sleep(500);
-			while ((msg = is.readLine()) != null) {
-				msg = msg.split("#")[1];
-				System.out.println("message recd : " + msg);
+			if ((n.init == true)) // not init phase
+			{	String msg = is.readLine();
+				msg=msg.split("#")[1];
+				System.out.println("message recd : "+ msg);
 				int id = Integer.parseInt(msg);
 				n.up.put(id, true);
+				System.out.println("up");
+				if(n.up.size()==n.noOfNodes){
+				n.isListening = false;
+				}
+				
+
+				
+			} else if (n.init == false) {
 
 			}
 		} catch (IOException e) {
@@ -187,9 +174,9 @@ class Listeners extends Thread {
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} finally {
+		}
+		finally {
 			try {
-				is.close();
 				servSocket.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -197,5 +184,9 @@ class Listeners extends Thread {
 			}
 		}
 	}
+
+
+
+
 
 }
