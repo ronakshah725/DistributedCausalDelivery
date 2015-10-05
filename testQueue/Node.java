@@ -1,3 +1,4 @@
+package testQueue;
 
 
 import java.io.BufferedReader;
@@ -9,9 +10,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-
-
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class Node {
 
@@ -22,12 +22,7 @@ public class Node {
 	int basePort = 9000;
 	String controllerHostName = "dc11.utdallas.edu";
 	boolean established = false;
-	ConcurrentHashMap<Integer, PrintWriter> outMap = new ConcurrentHashMap<>();
-	
-	
-	boolean startConnectingToOtherNodes = false;
-	boolean highEst=false;
-
+	 BlockingQueue<String> queue = new ArrayBlockingQueue<String>(10);
 
 	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 
@@ -48,38 +43,13 @@ public class Node {
 		
 		while(!me.getEst()){}
 		System.out.println("est : " + me.getEst());
-		//comes till here
 		//lets do a broadcast
-
-
-		
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
-			if (me.startConnectingToOtherNodes) {  
-
-				for (int id = me.NodeID-1; id > 0; id--) {
-					me.new RequestHandler(new Socket(me.getNodeAddress(id), me.BasePort+id));
-					
-
-				}
-			}
-			
-			System.out.println("Done connections to all");
-			System.out.println(me.outMap);
-
-		
-		
-		
-		
-		
-		
-		
-		
 		for (int i = 1; i<=me.noOfNodes; i++){
 			if(i==me.id)continue;
 			System.out.println("in broadcast");
-			new writingSocketThread(me, i, "hi from " + i);
+			new writingSocketThread(me, i, "hi from " + i).start();
 		}
+		
 		
 	}
 	public void initStore() {
@@ -124,14 +94,28 @@ public class Node {
 			return "" + id;
 		}
 	}
-	public synchronized boolean getHighEst() {
-		return highEst;
-	}
-	public synchronized void setHighEst(boolean highEst) {
-		this.highEst = highEst;
-	}
 
 
+}
+
+class QueueProcessor extends Thread{
+	
+	Node n;
+	public QueueProcessor(Node n) {
+		this.n = n;
+		
+	}
+	
+	public void run(){
+		try {
+
+			System.out.println(n.queue.take());
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 }
 
 class ListenHandler extends Thread{
@@ -148,20 +132,12 @@ class ListenHandler extends Thread{
 		try {
 			
 			listener = new ServerSocket(nodeObj.port);
-			
-			// continue accepting if all are establisged and 
-			while (!nodeObj.getHighEst()) {
+			while (true) {
 
-				new ListenerService(listener.accept(), nodeObj).start();
-				for (int i = nodeObj.id + 1; i<= nodeObj.noOfNodes; i++){
-					if(nodeObj.outMap.get(i)!=null){
-						continue;						
-					}
-					else {
-						nodeObj.setHighEst(true);
-						
-					}
-				}
+				System.out.println("in listener");
+				Socket socket = listener.accept();
+				System.out.println(socket);
+				new ListenerService(socket, nodeObj).start();
 			}
 		} 
 		catch (IOException e) {
@@ -198,16 +174,10 @@ class ListenerService extends Thread {
 		try {
 			System.out.println("in listener socket recd : " + servSocket);
 			is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
-			
-			int id = servSocket.getPort() - n.basePort;
-			
-			
-			if(n.outMap.get(id)==null) //take its out stream
-				n.outMap.put(id, new PrintWriter(servSocket.getOutputStream(),true));
-			
-			
+			int id = servSocket.getLocalPort() - n.basePort;
 			while ((msg = is.readLine()) != null) {
-
+				System.out.println("ghoomte raho in listener service");
+				n.queue.put(msg);
 				if (msg.contentEquals("establish")) {
 					n.setEst(true);;
 					System.out.println("fuck off");
@@ -224,6 +194,9 @@ class ListenerService extends Thread {
 
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 			try {
