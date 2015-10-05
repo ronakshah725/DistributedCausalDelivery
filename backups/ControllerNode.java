@@ -1,4 +1,4 @@
-//tested for 3 nodes recieving est from controller 
+//tested for 3 nodes recieving est from 
 package backups;
 
 import java.io.BufferedReader;
