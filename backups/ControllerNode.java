@@ -1,6 +1,5 @@
-package causal_delivery_attemp2;
-
-
+//tested for 3 nodes recieving est from controller 
+package backups;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -83,15 +82,14 @@ public class ControllerNode {
 				for (int i = 1; i<=3; i++){
 					new NotifyThreads(me, i, "establish", 0).start();
 				}
-				///////////////////////////test by sending sockets
-//				Socket sock = new Socket(me.host, 9001 );
-//				new PrintWriter(
-//						(sock
-//						.getOutputStream()), true
-//						
-//						).println("sent new yay");
-//				sock.close();
-//				System.exit(1);
+				Socket sock = new Socket(me.host, 9001 );
+				new PrintWriter(
+						(sock
+						.getOutputStream()), true
+						
+						).println("sent new yay");
+				sock.close();
+				System.exit(1);
 			}
 			else{
 				System.out.println(me.up);
@@ -122,16 +120,17 @@ class NotifyThreads extends Thread {
 	
 	public void run() {
 		try {
-
+			System.out.println("in notify");
 			int port = n.store.get(dstId).port;
 			String host = n.store.get(dstId).host;
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
+			System.out.println("Sending socket" + dstSocket);
 			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
 			
 			//out.println((String)obj);
 			out.println("establish");
-			System.out.println("sent est to " + dstId);
+			System.out.println("sent est");
 			dstSocket.close();
 
 		} catch (UnknownHostException e) {
@@ -165,8 +164,10 @@ class Listeners extends Thread {
 				System.out.println("message recd : "+ msg);
 				int id = Integer.parseInt(msg);
 				n.up.put(id, true);
-//				System.out.println("up");
+				System.out.println("up");
+				if(n.up.size()==3){
 				n.isListening = false;
+				}
 				
 
 				

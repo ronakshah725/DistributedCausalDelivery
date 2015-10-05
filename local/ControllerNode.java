@@ -47,12 +47,13 @@ public class ControllerNode {
 		try {
 
 			controller.controllerSocket = new ServerSocket(controller.PORT);
-
+			Thread t ;
 			int upNodes;
 			while (true) {
 				System.out.println("Starting to accept");
-				new controllerRequestHandler(controller.controllerSocket.accept()).start();
-	
+				t = new controllerRequestHandler(controller.controllerSocket.accept());
+				t.start();
+				System.out.println(checkStartMap.size());
 				if((upNodes = checkStartMap.size()) == 1){
 
 					break;
@@ -150,8 +151,7 @@ public class ControllerNode {
 				
 				try {
 					socket.close();
-					out.close();
-//					System.exit(0);
+
 					System.out.println("closed");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block

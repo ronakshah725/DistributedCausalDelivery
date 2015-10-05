@@ -1,5 +1,3 @@
-package causal_delivery_attemp2;
-
 
 
 public class NodeDef {

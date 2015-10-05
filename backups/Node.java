@@ -1,4 +1,4 @@
-
+package backups;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,9 +26,7 @@ public class Node {
 		
 		for (int i = 1; i < 12; i++) {
 			store.put(i, new NodeDef(i, host, basePort + i));
-			
 		}
-
 	}
 
 	Node(String id) {
@@ -60,10 +58,11 @@ public class Node {
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
+
 		/*
 		 * For Text
 		 * 
-		 * 
+		 */
 		
 		new Thread(new Runnable() {
             public void run() {
@@ -91,16 +90,11 @@ public class Node {
         }).start();
 		
 		
-		 *End For Text
+		 /*End For Text
 		 * 
 		 * */
 		
-		
-		
-		
-		
-	
-		Node me = new Node("01");
+/*		Node me = new Node("01");
 		System.out.println("Node " + me + " is running.");
 		me.initStore();
 		
@@ -111,10 +105,8 @@ public class Node {
 		
 		Thread.sleep(2000);	//wait for all to be up
 		
-		//rest of main
-		
-		
-		
+		//if all are up I cam 
+*/		
 	}
 
 }
@@ -135,7 +127,7 @@ class ListenHandler extends Thread{
 			listener = new ServerSocket(nodeObj.port);
 			while (true) {
 
-				System.out.println("in listener");
+//				System.out.println("in listener");
 				Socket socket = listener.accept();
 				new ListenerService(socket, nodeObj).start();
 			}
@@ -182,7 +174,7 @@ class ListenerService extends Thread {
 
 				}
 				if (msg.startsWith("sent")) {
-					System.out.println("fuck off");
+					System.out.println("yay");
 
 				}
 
@@ -223,6 +215,7 @@ class writingSocketThread extends Thread {
 			String host = n.store.get(dstId).host;
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
+			System.out.println("Sending socket" + dstSocket);
 			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
 			out.println(msg);
 			System.out.println("Sending" + msg);

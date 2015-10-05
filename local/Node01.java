@@ -97,7 +97,7 @@ public class Node01 {
 		
 		Thread.sleep(1000);
 																	@SuppressWarnings("resource")
-		Socket contSock = new Socket(me.HOSTNAME, 9011);
+		Socket contSock = new Socket(InetAddress.getLocalHost(), 9011);
 		PrintWriter outCont = new PrintWriter(contSock.getOutputStream(), true);
 		BufferedReader inFromController = new BufferedReader(new InputStreamReader(contSock.getInputStream()));
 		String inMSG;

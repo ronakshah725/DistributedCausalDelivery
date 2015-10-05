@@ -1,5 +1,7 @@
 package causal_delivery_attemp2;
 
+
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,7 +28,9 @@ public class Node {
 		
 		for (int i = 1; i < 12; i++) {
 			store.put(i, new NodeDef(i, host, basePort + i));
+			
 		}
+		System.out.println(store);
 	}
 
 	Node(String id) {
@@ -58,8 +62,47 @@ public class Node {
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
+		/*
+		 * For Text
+		 * 
+		 * 
+		
+		new Thread(new Runnable() {
+            public void run() {
+                for(int i = 1; i < 4; i++) {
+            		
+            		Node me = new Node(String.valueOf(i));
+            		System.out.println("Node " + me + " is running.");
+            		me.initStore();
+            		
+            		//tell controller that i am up
+            		new writingSocketThread(me, 11, "up" + "#" + getIDString(me.id)).start();;
 
-		Node me = new Node("01");
+            		new ListenHandler(me).start();
+            		
+            		try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}	//wait for all to be up
+            		
+            		System.out.println("All done back in main of "+ i);
+                }
+            }
+        }).start();
+		
+		
+		 *End For Text
+		 * 
+		 * */
+		
+		
+		
+		
+		
+	
+		Node me = new Node(args[0]);
 		System.out.println("Node " + me + " is running.");
 		me.initStore();
 		
@@ -70,7 +113,9 @@ public class Node {
 		
 		Thread.sleep(2000);	//wait for all to be up
 		
-		//if all are up I cam 
+		//rest of main
+		
+		
 		
 	}
 
