@@ -55,14 +55,14 @@ public class Node {
 		
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-			if (me.startConnectingToOtherNodes) {  
-
-				for (int id = me.NodeID-1; id > 0; id--) {
-					me.new RequestHandler(new Socket(me.getNodeAddress(id), me.BasePort+id));
-					
-
-				}
-			}
+//			if (me.startConnectingToOtherNodes) {  
+//
+//				for (int id = me.NodeID-1; id > 0; id--) {
+//					me.new RequestHandler(new Socket(me.getNodeAddress(id), me.BasePort+id));
+//					
+//
+//				}
+//			}
 			
 			System.out.println("Done connections to all");
 			System.out.println(me.outMap);

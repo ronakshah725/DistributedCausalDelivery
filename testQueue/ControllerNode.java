@@ -20,21 +20,19 @@ public class ControllerNode {
 			while (me.isListening) {
 				System.out.println("ghoomte raho");
 				Socket socket = listener.accept();
-				Thread t1 = new Listeners(socket,me );
+				Thread t1 = new Listeners(socket, me);
 				t1.start();
 				t1.join();
 			}
-			if(me.up.size()==me.noOfNodes){
+			if (me.up.size() == me.noOfNodes) {
 				System.out.println("in breaker");
-				for (int i = 1; i<=me.noOfNodes; i++){
+				for (int i = 1; i <= me.noOfNodes; i++) {
 					new NotifyThreads(me, i, "establish", 0).start();
 				}
-			}
-			else{
+			} else {
 				System.out.println(me.up);
 			}
-		} 
-		finally {
+		} finally {
 			listener.close();
 		}
 	}
@@ -53,22 +51,23 @@ public class ControllerNode {
 	public String toString() {
 		return id + "@" + host + ":" + port;
 	}
-	
-	public void initStore(){
-	//take from config file
-		for (int i = 1; i <=noOfNodes+1 ; i++) {
+
+	public void initStore() {
+		// take from config file
+		for (int i = 1; i <= noOfNodes + 1; i++) {
 			store.put(i, new NodeDef(i, host, basePort + i));
 		}
 	}
+
 	int id;
 	String host;
-	final  int noOfNodes = 2;
+	final int noOfNodes = 2;
 	int port;
 	int basePort = 9000;
 	String controllerHostName = "dc11.utdallas.edu";
 	boolean init = true;
 	boolean isListening = true;
-	HashMap<Integer,Boolean> up = new HashMap<>();
+	HashMap<Integer, Boolean> up = new HashMap<>();
 
 	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 
@@ -86,7 +85,7 @@ class NotifyThreads extends Thread {
 		this.dstId = dstId;
 		this.obj = obj;
 	}
-	
+
 	public void run() {
 		try {
 			System.out.println("in notify");
@@ -109,13 +108,13 @@ class NotifyThreads extends Thread {
 }
 
 class Listeners extends Thread {
-	
+
 	Socket servSocket;
 	ControllerNode n;
 	ObjectInputStream iis;
 
 	public Listeners(Socket csocket, ControllerNode n) {
-	
+
 		this.servSocket = csocket;
 		this.n = n;
 	}
@@ -126,14 +125,15 @@ class Listeners extends Thread {
 			iis = new ObjectInputStream(servSocket.getInputStream());
 			Thread.sleep(500);
 			if ((n.init == true)) // not init phase
-			{	String msg = (String)iis.readObject();
-				msg=msg.split("#")[1];
-				System.out.println("message recd : "+ msg);
+			{
+				String msg = (String) iis.readObject();
+				msg = msg.split("#")[1];
+				System.out.println("message recd : " + msg);
 				int id = Integer.parseInt(msg);
 				n.up.put(id, true);
 				System.out.println("up");
-				if(n.up.size()==n.noOfNodes){
-				n.isListening = false;
+				if (n.up.size() == n.noOfNodes) {
+					n.isListening = false;
 				}
 			} else if (n.init == false) {
 
@@ -144,8 +144,7 @@ class Listeners extends Thread {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			try {
 				servSocket.close();
 			} catch (IOException e) {

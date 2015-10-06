@@ -19,19 +19,20 @@ public class Node {
 		Node me = new Node(args[0]);
 		System.out.println("Node " + me + " is running.");
 		me.initStore();
-		new writingSocketThread(me, 11, "up" + "#" + getIDString(me.id)).start();
+		Protocol p = new Protocol(System.currentTimeMillis(), me.id, me.myMat, "up" + "#" + getIDString(me.id));
+		new writingSocketThread(me, 11, p ).start();
 		new ListenHandler(me).start();
 		Thread.sleep(2000); // wait for all to be up
 		while (!me.getEst()) {
 		}
 		System.out.println("est : " + me.getEst());
 		// lets do a broadcast
-		for (int i = 1; i <= me.noOfNodes; i++) {
-			if (i == me.id)
-				continue;
-			System.out.println("in broadcast");
-			new writingSocketThread(me, i, "hi from " + i).start();
-		}
+//		for (int i = 1; i <= me.noOfNodes; i++) {
+//			if (i == me.id)
+//				continue;
+//			System.out.println("in broadcast");
+//			new writingSocketThread(me, i, "hi from " + i).start();
+//		}
 		new QueueProcessor(me).start();
 	}
 
@@ -59,6 +60,11 @@ public class Node {
 			e.printStackTrace();
 		}
 		this.port = this.basePort + this.id;
+		for(int i = 0; i<10; i++){
+			for (int j = 0; j<10; j++ ){
+				this.myMat[i][j] = 0;
+			}
+		}
 
 	}
 
@@ -82,8 +88,9 @@ public class Node {
 	int basePort = 9000;
 	String controllerHostName = "dc11.utdallas.edu";
 	boolean established = false;
+	int [][] myMat;
 	
-	BlockingQueue<String> queue = new ArrayBlockingQueue<String>(100);
+	BlockingQueue<Protocol> queue = new ArrayBlockingQueue<Protocol>(100);
 
 	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 }
@@ -97,7 +104,7 @@ class QueueProcessor extends Thread {
 
 	public void run() {
 		try {
-			String m;
+			Protocol m;
 			while ((m = n.queue.take()) != null) {
 				System.out.println("Queue : " + m);
 			}
@@ -159,17 +166,17 @@ class ListenerService extends Thread {
 			@SuppressWarnings("unused")
 			int id = servSocket.getLocalPort() - n.basePort;
 			while (true) {
-				Object msg;
-				msg = iis.readObject();
+				Protocol msg;
+				msg = (Protocol)iis.readObject();
 				if (msg == null)
 					break;
 				System.out.println("ghoomte raho in listener service");
-				n.queue.put((String) msg);
-				if (((String) msg).contentEquals("establish")) {
+				n.queue.put(msg);
+				if ( msg.type.startsWith("establish")) {
 					n.setEst(true);
 					System.out.println("fuck off");
 				}
-				if ((((String) msg).startsWith("sent"))) {
+				if (msg.type.startsWith("sent")) {
 					System.out.println("yay");
 				}
 			}
@@ -190,15 +197,17 @@ class ListenerService extends Thread {
 
 class writingSocketThread extends Thread {
 	Node n;
-	String msg;
 	int dstId;
+	Protocol p;
 
-	public writingSocketThread(Node n, int dstId, String msg) {
+	public writingSocketThread(Node n, int dstId, Protocol p) {
 
 		this.n = n;
 		this.dstId = dstId;
-		this.msg = msg;
+		this.p = p;
 	}
+
+
 
 	public void run() {
 		try {
@@ -209,11 +218,7 @@ class writingSocketThread extends Thread {
 			Socket dstSocket = new Socket(address, port);
 			System.out.println("Sending socket" + dstSocket);
 			ObjectOutputStream oos = new ObjectOutputStream(dstSocket.getOutputStream());
-			oos.writeObject((Object) msg);
-			// PrintWriter out = new PrintWriter(dstSocket.getOutputStream(),
-			// true);
-			// out.println(msg);
-			System.out.println("Sending" + msg);
+			oos.writeObject(p);
 			dstSocket.close();
 
 		} catch (UnknownHostException e) {
