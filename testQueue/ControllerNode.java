@@ -27,7 +27,8 @@ public class ControllerNode {
 			if (me.up.size() == me.noOfNodes) {
 				System.out.println("in breaker");
 				for (int i = 1; i <= me.noOfNodes; i++) {
-					new NotifyThreads(me, i, "establish", 0).start();
+					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[10][10], "establish");
+					new NotifyThreads(me, i, p, 0).start();
 				}
 			} else {
 				System.out.println(me.up);
@@ -58,6 +59,13 @@ public class ControllerNode {
 			store.put(i, new NodeDef(i, host, basePort + i));
 		}
 	}
+	static String getIDString(int id) {
+		if (id < 10) {
+			return "0" + id;
+		} else {
+			return "" + id;
+		}
+	}
 
 	int id;
 	String host;
@@ -77,9 +85,9 @@ class NotifyThreads extends Thread {
 
 	ControllerNode n;
 	int dstId;
-	Object obj;
+	Protocol obj;
 
-	public NotifyThreads(ControllerNode n, int dstId, Object obj, int type) {
+	public NotifyThreads(ControllerNode n, int dstId, Protocol obj, int type) {
 
 		this.n = n;
 		this.dstId = dstId;
@@ -95,7 +103,7 @@ class NotifyThreads extends Thread {
 			Socket dstSocket = new Socket(address, port);
 			System.out.println("Sending socket" + dstSocket);
 			ObjectOutputStream oos = new ObjectOutputStream(dstSocket.getOutputStream());
-			oos.writeObject(new String("establish"));
+			oos.writeObject(obj);
 			System.out.println("sent est");
 			oos.close();
 			dstSocket.close();
@@ -126,10 +134,10 @@ class Listeners extends Thread {
 			Thread.sleep(500);
 			if ((n.init == true)) // not init phase
 			{
-				String msg = (String) iis.readObject();
-				msg = msg.split("#")[1];
-				System.out.println("message recd : " + msg);
-				int id = Integer.parseInt(msg);
+				Protocol msg = (Protocol) iis.readObject();
+				msg.type = msg.type.split("#")[1];
+//				System.out.println("message recd : " + msg);
+				int id = Integer.parseInt(msg.type);
 				n.up.put(id, true);
 				System.out.println("up");
 				if (n.up.size() == n.noOfNodes) {

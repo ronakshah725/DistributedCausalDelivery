@@ -33,7 +33,7 @@ public class Node {
 //			System.out.println("in broadcast");
 //			new writingSocketThread(me, i, "hi from " + i).start();
 //		}
-		new QueueProcessor(me).start();
+		//new QueueProcessor(me).start();
 	}
 
 	public void initStore() {
@@ -60,6 +60,7 @@ public class Node {
 			e.printStackTrace();
 		}
 		this.port = this.basePort + this.id;
+		this.myMat = new int[10][10];
 		for(int i = 0; i<10; i++){
 			for (int j = 0; j<10; j++ ){
 				this.myMat[i][j] = 0;
