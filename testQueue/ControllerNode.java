@@ -5,6 +5,8 @@ package testQueue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -121,12 +123,16 @@ class NotifyThreads extends Thread {
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
 			System.out.println("Sending socket" + dstSocket);
-			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
-			
-			//out.println((String)obj);
-			out.println("establish");
+//			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
+//			
+//			//out.println((String)obj);
+//			out.println("establish");
+			ObjectOutputStream oos = new ObjectOutputStream(dstSocket.getOutputStream());
+			oos.writeObject(new String("establish"));
 			System.out.println("sent est");
+			oos.close();
 			dstSocket.close();
+			
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -141,6 +147,7 @@ class Listeners extends Thread {
 
 	Socket servSocket;
 	ControllerNode n;
+	ObjectInputStream iis;
 
 	public Listeners(Socket csocket, ControllerNode n) {
 		this.servSocket = csocket;
@@ -151,10 +158,11 @@ class Listeners extends Thread {
 
 		try {
 
-			BufferedReader is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
+			//BufferedReader is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
+			iis = new ObjectInputStream(servSocket.getInputStream());
 			Thread.sleep(500);
 			if ((n.init == true)) // not init phase
-			{	String msg = is.readLine();
+			{	String msg = (String)iis.readObject();
 				msg=msg.split("#")[1];
 				System.out.println("message recd : "+ msg);
 				int id = Integer.parseInt(msg);
@@ -173,6 +181,9 @@ class Listeners extends Thread {
 
 			e.printStackTrace();
 		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

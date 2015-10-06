@@ -47,7 +47,8 @@ public class Node {
 //		for (int i = 1; i<=me.noOfNodes; i++){
 //			if(i==me.id)continue;
 //			System.out.println("in broadcast");
-			new writingSocketThread(me, 1, "hi from " + 1).start();;
+//			new writingSocketThread(me, i, "hi from " + i).start();
+//		}
 		
 		
 	}
@@ -173,7 +174,7 @@ class ListenerService extends Thread {
 		try {
 			System.out.println("in listener socket recd : " + servSocket);
 			is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
-			int id = servSocket.getPort() - n.basePort;
+//			int id = servSocket.getLocalPort() - n.basePort;
 			while ((msg = is.readLine()) != null) {
 				System.out.println("ghoomte raho in listener service");
 				n.queue.put(msg);
@@ -186,10 +187,7 @@ class ListenerService extends Thread {
 					System.out.println("yay");
 
 				}
-				if (msg.startsWith("hi")) {
-					System.out.println("hi recieved from " + id);
 
-				}
 
 			}
 		} catch (IOException e) {
