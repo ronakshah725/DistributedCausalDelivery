@@ -1,10 +1,9 @@
 package backups;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -15,65 +14,48 @@ import java.util.concurrent.BlockingQueue;
 
 public class Node {
 
-	int id;
-	String host;
-	final int noOfNodes = 2;
-	int port;
-	int basePort = 9000;
-	String controllerHostName = "dc11.utdallas.edu";
-	boolean established = false;
-	 BlockingQueue<String> queue = new ArrayBlockingQueue<String>(10);
-
-	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
-
-
 	public static void main(String[] args) throws IOException, InterruptedException {
 
-		
-	Node me = new Node(args[0]);
+		Node me = new Node(args[0]);
 		System.out.println("Node " + me + " is running.");
 		me.initStore();
-		
-		//tell controller that i am up
-		new writingSocketThread(me, 11, "up" + "#" + getIDString(me.id)).start();;
-
+		new writingSocketThread(me, 11, "up" + "#" + getIDString(me.id)).start();
 		new ListenHandler(me).start();
-		
-		Thread.sleep(2000);	//wait for all to be up
-		
-		while(!me.getEst()){}
+		Thread.sleep(2000); // wait for all to be up
+		while (!me.getEst()) {
+		}
 		System.out.println("est : " + me.getEst());
-		//lets do a broadcast
-//		for (int i = 1; i<=me.noOfNodes; i++){
-//			if(i==me.id)continue;
-//			System.out.println("in broadcast");
-//			new writingSocketThread(me, i, "hi from " + i).start();
-//		}
-		
-		
+		// lets do a broadcast
+		for (int i = 1; i <= me.noOfNodes; i++) {
+			if (i == me.id)
+				continue;
+			System.out.println("in broadcast");
+			new writingSocketThread(me, i, "hi from " + i).start();
+		}
+		new QueueProcessor(me).start();
 	}
+
 	public void initStore() {
-		
-		for (int i = 1; i <=11 ; i++) {
+		for (int i = 1; i <= 11; i++) {
 			store.put(i, new NodeDef(i, host, basePort + i));
 		}
 	}
-	
-	public synchronized void setEst(boolean est){
+
+	public synchronized void setEst(boolean est) {
 		established = est;
 	}
-	
-	public synchronized boolean getEst(){
-		return established; 
+
+	public synchronized boolean getEst() {
+		return established;
 	}
 
 	Node(String id) {
-		
+
 		this.id = Integer.parseInt(id);
 		try {
 			this.host = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
-			
+
 			e.printStackTrace();
 		}
 		this.port = this.basePort + this.id;
@@ -86,51 +68,56 @@ public class Node {
 	}
 
 	static String getIDString(int id) {
-		
 		if (id < 10) {
-
 			return "0" + id;
 		} else {
 			return "" + id;
 		}
 	}
 
+	int id;
+	String host;
+	final int noOfNodes = 2;
+	int port;
+	int basePort = 9000;
+	String controllerHostName = "dc11.utdallas.edu";
+	boolean established = false;
+	
+	BlockingQueue<String> queue = new ArrayBlockingQueue<String>(100);
 
+	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 }
 
-class QueueProcessor extends Thread{
-	
+class QueueProcessor extends Thread {
 	Node n;
+
 	public QueueProcessor(Node n) {
 		this.n = n;
-		
 	}
-	
-	public void run(){
-		try {
 
-			System.out.println(n.queue.take());
+	public void run() {
+		try {
+			String m;
+			while ((m = n.queue.take()) != null) {
+				System.out.println("Queue : " + m);
+			}
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 }
 
-class ListenHandler extends Thread{
+class ListenHandler extends Thread {
 	Node nodeObj;
 	ServerSocket listener;
-	
+
 	public ListenHandler(Node me) {
-		
 		nodeObj = me;
 	}
-	
-	
-	public void run(){
+
+	public void run() {
 		try {
-			
+
 			listener = new ServerSocket(nodeObj.port);
 			while (true) {
 
@@ -139,28 +126,23 @@ class ListenHandler extends Thread{
 				System.out.println(socket);
 				new ListenerService(socket, nodeObj).start();
 			}
-		} 
-		catch (IOException e) {
-			
+		} catch (IOException e) {
+
 			e.printStackTrace();
-		} 
-		finally {
+		} finally {
 			try {
 				listener.close();
-			} 
-			catch (IOException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 	}
 }
 
 class ListenerService extends Thread {
-
 	Socket servSocket;
 	Node n;
-	String msg;
 	BufferedReader is;
 
 	public ListenerService(Socket csocket, Node n) {
@@ -170,47 +152,43 @@ class ListenerService extends Thread {
 	}
 
 	public void run() {
-
 		try {
 			System.out.println("in listener socket recd : " + servSocket);
-			is = new BufferedReader(new InputStreamReader(servSocket.getInputStream()));
-//			int id = servSocket.getLocalPort() - n.basePort;
-			while ((msg = is.readLine()) != null) {
+			ObjectInputStream iis = new ObjectInputStream(servSocket.getInputStream());
+			System.out.println(iis);
+			@SuppressWarnings("unused")
+			int id = servSocket.getLocalPort() - n.basePort;
+			while (true) {
+				Object msg;
+				msg = iis.readObject();
+				if (msg == null)
+					break;
 				System.out.println("ghoomte raho in listener service");
-				n.queue.put(msg);
-				if (msg.contentEquals("establish")) {
-					n.setEst(true);;
+				n.queue.put((String) msg);
+				if (((String) msg).contentEquals("establish")) {
+					n.setEst(true);
 					System.out.println("fuck off");
-
 				}
-				if (msg.startsWith("sent")) {
+				if ((((String) msg).startsWith("sent"))) {
 					System.out.println("yay");
-
 				}
-
-
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} finally {
 			try {
-				is.close();
 				servSocket.close();
 			} catch (IOException e) {
-				
 				e.printStackTrace();
 			}
-
 		}
 	}
-
 }
 
 class writingSocketThread extends Thread {
-
 	Node n;
 	String msg;
 	int dstId;
@@ -230,8 +208,11 @@ class writingSocketThread extends Thread {
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
 			System.out.println("Sending socket" + dstSocket);
-			PrintWriter out = new PrintWriter(dstSocket.getOutputStream(), true);
-			out.println(msg);
+			ObjectOutputStream oos = new ObjectOutputStream(dstSocket.getOutputStream());
+			oos.writeObject((Object) msg);
+			// PrintWriter out = new PrintWriter(dstSocket.getOutputStream(),
+			// true);
+			// out.println(msg);
 			System.out.println("Sending" + msg);
 			dstSocket.close();
 

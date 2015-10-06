@@ -2,10 +2,8 @@ package testQueue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,44 +14,28 @@ import java.util.concurrent.BlockingQueue;
 
 public class Node {
 
-	int id;
-	String host;
-	final int noOfNodes = 2;
-	int port;
-	int basePort = 9000;
-	String controllerHostName = "dc11.utdallas.edu";
-	boolean established = false;
-	BlockingQueue<String> queue = new ArrayBlockingQueue<String>(10);
-
-	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
-
 	public static void main(String[] args) throws IOException, InterruptedException {
 
 		Node me = new Node(args[0]);
 		System.out.println("Node " + me + " is running.");
 		me.initStore();
 		new writingSocketThread(me, 11, "up" + "#" + getIDString(me.id)).start();
-		;
-
 		new ListenHandler(me).start();
-
 		Thread.sleep(2000); // wait for all to be up
-
 		while (!me.getEst()) {
 		}
 		System.out.println("est : " + me.getEst());
 		// lets do a broadcast
-		 for (int i = 1; i<=me.noOfNodes; i++){
-		 if(i==me.id)continue;
-		 System.out.println("in broadcast");
-		 new writingSocketThread(me, i, "hi from " + i).start();
-		 }
+		for (int i = 1; i <= me.noOfNodes; i++) {
+			if (i == me.id)
+				continue;
+			System.out.println("in broadcast");
+			new writingSocketThread(me, i, "hi from " + i).start();
+		}
 		new QueueProcessor(me).start();
-
 	}
 
 	public void initStore() {
-
 		for (int i = 1; i <= 11; i++) {
 			store.put(i, new NodeDef(i, host, basePort + i));
 		}
@@ -86,37 +68,42 @@ public class Node {
 	}
 
 	static String getIDString(int id) {
-
 		if (id < 10) {
-
 			return "0" + id;
 		} else {
 			return "" + id;
 		}
 	}
 
+	int id;
+	String host;
+	final int noOfNodes = 2;
+	int port;
+	int basePort = 9000;
+	String controllerHostName = "dc11.utdallas.edu";
+	boolean established = false;
+	
+	BlockingQueue<String> queue = new ArrayBlockingQueue<String>(100);
+
+	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 }
 
 class QueueProcessor extends Thread {
-
 	Node n;
 
 	public QueueProcessor(Node n) {
 		this.n = n;
-
 	}
 
 	public void run() {
 		try {
 			String m;
-			while ((m = n.queue.take())!=null) {
+			while ((m = n.queue.take()) != null) {
 				System.out.println("Queue : " + m);
 			}
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 }
 
@@ -125,7 +112,6 @@ class ListenHandler extends Thread {
 	ServerSocket listener;
 
 	public ListenHandler(Node me) {
-
 		nodeObj = me;
 	}
 
@@ -155,10 +141,8 @@ class ListenHandler extends Thread {
 }
 
 class ListenerService extends Thread {
-
 	Socket servSocket;
 	Node n;
-
 	BufferedReader is;
 
 	public ListenerService(Socket csocket, Node n) {
@@ -168,13 +152,12 @@ class ListenerService extends Thread {
 	}
 
 	public void run() {
-
 		try {
 			System.out.println("in listener socket recd : " + servSocket);
-
 			ObjectInputStream iis = new ObjectInputStream(servSocket.getInputStream());
 			System.out.println(iis);
-			// int id = servSocket.getLocalPort() - n.basePort;
+			@SuppressWarnings("unused")
+			int id = servSocket.getLocalPort() - n.basePort;
 			while (true) {
 				Object msg;
 				msg = iis.readObject();
@@ -185,38 +168,27 @@ class ListenerService extends Thread {
 				if (((String) msg).contentEquals("establish")) {
 					n.setEst(true);
 					System.out.println("fuck off");
-
 				}
 				if ((((String) msg).startsWith("sent"))) {
 					System.out.println("yay");
-
 				}
-
 			}
 		} catch (IOException e) {
-
 		} catch (InterruptedException e) {
-
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 			try {
-
 				servSocket.close();
 			} catch (IOException e) {
-
 				e.printStackTrace();
 			}
-
 		}
 	}
-
 }
 
 class writingSocketThread extends Thread {
-
 	Node n;
 	String msg;
 	int dstId;
