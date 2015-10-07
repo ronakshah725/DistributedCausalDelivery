@@ -25,7 +25,7 @@ public class Node {
 		Thread.sleep(2000); // wait for all to be up
 		while (!me.getEst()) {
 		}
-		System.out.println("est : " + me.getEst());
+		System.out.println("established : " + me.getEst());
 		// lets do a broadcast
 //		for (int i = 1; i <= me.noOfNodes; i++) {
 //			if (i == me.id)
@@ -33,7 +33,7 @@ public class Node {
 //			System.out.println("in broadcast");
 //			new writingSocketThread(me, i, "hi from " + i).start();
 //		}
-		//new QueueProcessor(me).start();
+		new QueueProcessor(me).start();
 	}
 
 	public void initStore() {
@@ -66,6 +66,7 @@ public class Node {
 				this.myMat[i][j] = 0;
 			}
 		}
+		recdMSGS = "At "+ id+ ":"+"#";
 
 	}
 
@@ -87,33 +88,18 @@ public class Node {
 	final int noOfNodes = 2;
 	int port;
 	int basePort = 9000;
-	String controllerHostName = "dc11.utdallas.edu";
+//	String controllerHostName = "dc11.utdallas.edu";
 	boolean established = false;
+	boolean terminate = false;
 	int [][] myMat;
+	String recdMSGS; //from each nod
 	
 	BlockingQueue<Protocol> queue = new ArrayBlockingQueue<Protocol>(100);
 
 	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
 }
 
-class QueueProcessor extends Thread {
-	Node n;
 
-	public QueueProcessor(Node n) {
-		this.n = n;
-	}
-
-	public void run() {
-		try {
-			Protocol m;
-			while ((m = n.queue.take()) != null) {
-				System.out.println("Queue : " + m);
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
-}
 
 class ListenHandler extends Thread {
 	Node nodeObj;
@@ -127,7 +113,7 @@ class ListenHandler extends Thread {
 		try {
 
 			listener = new ServerSocket(nodeObj.port);
-			while (true) {
+			while (!nodeObj.terminate) {
 
 				System.out.println("in listener");
 				Socket socket = listener.accept();
