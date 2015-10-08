@@ -1,95 +1,165 @@
 package testQueue;
 
+import java.io.Serializable;
 import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class QueueProcessor extends Thread {
 
 	Node n;
 	static Random r;
+	BlockingQueue<BufferMessage> buffer = new ArrayBlockingQueue<>(500);
+	long averageBufferTime;
+	int bufferedMessageCount = 0;
+	boolean stopQueue =false;
+	
 
 	public QueueProcessor(Node n) {
+		r= new Random();
 		this.n = n;
 	}
 
+	
+	
+	public synchronized boolean getStopQueue() {
+		return stopQueue;
+	}
+
+
+
+	public synchronized void setStopQueue(boolean stopQueue) {
+		this.stopQueue = stopQueue;
+	}
+
+
+
 	public void run() {
 		Protocol m;
-		while (!n.terminate) {
+		while (!getStopQueue()) {
+//			System.out.println("ghoomte in qp");
 			try {
-				// mimic propogation delay
-				Thread.sleep((long)getrandom(50, 100));
-				m = n.queue.take();
+				//System.out.println("in que processor, que not empty and now going to take head and process");
+				if (!n.queue.isEmpty()) {
+					//System.out.println("queue not empty");
+					
+					
+					// mimic propogation delay
 				
-				//check if the message can be delivered the node
-				if(isDeliverable(n,m)){
+					//System.out.println("sleep in que value : " + (f=getrandom(50, 100)));
+					Thread.sleep( getrandom(50, 100));
 					
-					
-				//if yes, then consume the message and update node matrix
-					Deliver(n,m);
+					m = n.queue.take();
+					if(m.type.startsWith("est")||m.type.startsWith("term"))
+					{
+						System.out.println("status, ignored " + m.type);
+						continue;
+					}
+					//System.out.println("Message taken" + m);
+
+					// check if the message can be delivered the node
+					if (isDeliverable(n, m)) {
+
+					// if yes, then consume the message and update node matrix
+						deliver(n, m);
+					} else {
+						bufferedMessageCount++;
+						buffer.add(new BufferMessage(m, System.currentTimeMillis()));
+					}
+					if(n.getTerminate()){
+						System.out.println("que terminate");
+						break;
+					}
 				}
-				
-				
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			
 		}
 	}
 
 	
-	private void Deliver(Node n2, Protocol m) {
-		// TODO Auto-generated method stub
-		updateMyMat(n2, m);
-		consume(n, m.type);//append to some string
-		
-	}
+	private void deliver(Node n2, Protocol m) {
 
-	private void consume(Node n2, String type) {
-		n2.recdMSGS += type + "#"; 
+		n2.componentViseUpdateMyMat( m);
+		consume(n, m);// append to some string
 		
-	}
-
-	private void updateMyMat(Node n2, Protocol M) {
-		// TODO Auto-generated method stub
-		int[][] p = n2.myMat;
-		int[][]m = M.matrix;
-		
-		
-		for(int i=0; i< n2.noOfNodes; i++)
-			for(int j = 0; j<n2.noOfNodes; j++){
-				p[i][j]=m[i][j]>p[i][j]?m[i][j]:p[i][j] ;
+		if(!buffer.isEmpty()){
+			//try to empty the queue
+			for (BufferMessage bm : buffer){ 
+				if(isDeliverable(n2, bm.m))
+					deliver(n2, bm.m); //recursive
 			}
-		
+		}
+
 	}
 
+	/*
+	 * OK
+	 * OK
+	 * 
+	 * */
+	
+	private void consume(Node n2, Protocol m) {
+		//n2.recdMSGS += type + "#";
+		n2.recdMSGS += " ["+m.id+"]:" + m.type + " #";
+	}
+
+	/*
+	 * OK
+	 * OK
+	 * 
+	 * */
+	
 	private boolean isDeliverable(Node n2, Protocol M) {
-		int[][] p = n2.myMat;
-		int[][]m = M.matrix;
+
+		int[][] p = n2.getMyMat();
+		int[][] m = M.matrix;
 		
+		// nodes  from 1 to 10 but in matrix they are represented as 0 to 9
+		int mid = M.id - 1;					
+		int pid = n2.id - 1;
 		
-		int mid = M.id;
-		int pid = n2.id;
-		for(int i=0; i< n2.noOfNodes;i++)
-		{
-				//process only column of node that is pid
-				int pb = p[i][pid];
-				int mb = m[i][pid];
-				
-				if(mb-pb>1)
-					return false;
-				else 
-					if(mb-pb==1 && mid!=i){
-						return false;
-					}
-				return true;
-				
-			}
-		return false;
+		//go through the column vector corresponding to this node is, in both recieved message vector and node's current matrix
+		
+		for (int i = 0; i < n2.noOfNodes; i++) {
+											
+			// process only column of node that is Node id ie pid
+			int pb = p[i][pid];
+			int mb = m[i][pid];
+
+			//more than one difference means at least one message waiting to be delivered
+			if (mb - pb > 1) 
+				return false;
+			
+			//if recd comp is greater than node component by 1 and if 
+			else if (mb - pb == 1 && mid != i) 
+				return false;
+		}
+		return true;
 	}
 
+	/*
+	 * OK
+	 * OK
+	 * 
+	 * */
 	static int getrandom(int min, int max) {
 		return r.nextInt((max - min) + 1) + min;
-
 	}
 }
 
-
+/*
+ * OK
+ * OK
+ * 
+ * */
+@SuppressWarnings("serial")
+class BufferMessage implements Serializable
+{
+	Protocol m;
+	long insertTS;
+	public BufferMessage(Protocol m, long insertTS) {
+		this.m = m;
+		this.insertTS = insertTS;
+	}
+}

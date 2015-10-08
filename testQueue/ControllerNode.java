@@ -8,30 +8,50 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ControllerNode {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 		ControllerNode me = new ControllerNode("11");
-		me.initStore();
+
 		System.out.println("Controller " + me + " is running.");
 		ServerSocket listener = new ServerSocket(me.port);
 		try {
 			while (me.isListening) {
-				System.out.println("ghoomte raho");
+				// System.out.println("ghoomte raho");
 				Socket socket = listener.accept();
 				Thread t1 = new Listeners(socket, me);
 				t1.start();
 				t1.join();
 			}
 			if (me.up.size() == me.noOfNodes) {
-				System.out.println("in breaker");
+				// System.out.println("in breaker");
+				String nodeInfoString = me.getStoreString();
 				for (int i = 1; i <= me.noOfNodes; i++) {
-					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[10][10], "establish");
+					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[me.noOfNodes][me.noOfNodes], "establish"+"sp"+nodeInfoString);
 					new NotifyThreads(me, i, p, 0).start();
 				}
-			} else {
-				System.out.println(me.up);
+			}
+
+			me.init = false;
+
+			// start listening again for termination
+			me.isListening = true;
+
+			while (me.isListening) {
+				System.out.println("listening for termination");
+				Socket socket = listener.accept();
+				Thread t1 = new Listeners(socket, me);
+				t1.start();
+				t1.join();
+			}
+			if (me.down.size() == me.noOfNodes) {
+				System.out.println("in term breaker");
+				for (int i = 1; i <= me.noOfNodes; i++) {
+					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[me.noOfNodes][me.noOfNodes], "terminate");
+					new NotifyThreads(me, i, p, 0).start();
+				}
 			}
 		} finally {
 			listener.close();
@@ -53,11 +73,24 @@ public class ControllerNode {
 		return id + "@" + host + ":" + port;
 	}
 
-	public void initStore() {
-		// take from config file
-		for (int i = 1; i <= noOfNodes + 1; i++) {
-			store.put(i, new NodeDef(i, host, basePort + i));
+//	public void initStore() {
+//		// take from config file
+//		for (int i = 1; i <= noOfNodes; i++) {
+////			store.put(i, new NodeDef(i, host, basePort + i));
+//		}
+//		store.put(11, new NodeDef(11, host, basePort + 11));
+//	}
+	
+	
+	public String getStoreString(){
+	
+		String storeInfo="";
+		for (NodeDef nd : this.store.values()){
+			storeInfo+=nd + "sp";
 		}
+			
+		return storeInfo; 
+		
 	}
 	static String getIDString(int id) {
 		if (id < 10) {
@@ -69,15 +102,16 @@ public class ControllerNode {
 
 	int id;
 	String host;
-	final int noOfNodes = 2;
+	final int noOfNodes = 3;
 	int port;
 	int basePort = 9000;
-	String controllerHostName = "dc11.utdallas.edu";
+	// String controllerHostName = "dc11.utdallas.edu";
 	boolean init = true;
 	boolean isListening = true;
 	HashMap<Integer, Boolean> up = new HashMap<>();
+	HashMap<Integer, Boolean> down = new HashMap<>();
 
-	HashMap<Integer, NodeDef> store = new HashMap<Integer, NodeDef>();
+	ConcurrentHashMap<Integer, NodeDef> store = new ConcurrentHashMap<Integer, NodeDef>();
 
 }
 
@@ -96,15 +130,17 @@ class NotifyThreads extends Thread {
 
 	public void run() {
 		try {
-			System.out.println("in notify");
 			int port = n.store.get(dstId).port;
 			String host = n.store.get(dstId).host;
 			InetAddress address = InetAddress.getByName(host);
 			Socket dstSocket = new Socket(address, port);
-			System.out.println("Sending socket" + dstSocket);
 			ObjectOutputStream oos = new ObjectOutputStream(dstSocket.getOutputStream());
+			
+
+			
+			
 			oos.writeObject(obj);
-			System.out.println("sent est");
+			System.out.println("sent " + obj.type);
 			oos.close();
 			dstSocket.close();
 		} catch (UnknownHostException e) {
@@ -135,15 +171,23 @@ class Listeners extends Thread {
 			if ((n.init == true)) // not init phase
 			{
 				Protocol msg = (Protocol) iis.readObject();
-				msg.type = msg.type.split("#")[1];
-//				System.out.println("message recd : " + msg);
-				int id = Integer.parseInt(msg.type);
-				n.up.put(id, true);
+				String ninfo = msg.type = msg.type.split("#")[1];
+				String [] nd = ninfo.split("sp");
+				NodeDef ndef = new NodeDef(Integer.parseInt(nd[0]), nd[1], Integer.parseInt(nd[2]));
+				n.up.put(ndef.id, true);
+				n.store.put(ndef.id,ndef);
 				System.out.println("up");
 				if (n.up.size() == n.noOfNodes) {
 					n.isListening = false;
 				}
 			} else if (n.init == false) {
+				Protocol msg = (Protocol) iis.readObject();
+				msg.type = msg.type.split("#")[1];
+				int id = Integer.parseInt(msg.type);
+				n.down.put(id, true);
+				if (n.down.size() == n.noOfNodes) {
+					n.isListening = false;
+				}
 
 			}
 		} catch (IOException e) {

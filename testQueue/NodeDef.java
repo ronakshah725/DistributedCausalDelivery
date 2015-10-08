@@ -14,6 +14,6 @@ public class NodeDef {
 	
 	public String toString() {
 
-		return id + "@" + host + ":" + port;
+		return id + "sp" + host + "sp" + port;
 	}
 }

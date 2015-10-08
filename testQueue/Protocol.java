@@ -1,9 +1,9 @@
 package testQueue;
 
 import java.io.Serializable;
-import java.util.Random;
 
 
+@SuppressWarnings("serial")
 public class Protocol implements Serializable {
 
 	long ts;
@@ -21,6 +21,8 @@ public class Protocol implements Serializable {
 public String toString(){
 	
 	return "ID:"+ id+", " +"TimeStamp:" + ts+ ", " +"Type:"+ type + "\n" + getPrintableMat(matrix) ;
+//	return "ID:"+ id+", " +"TimeStamp:" + ts+ ", " +"Type:"+ type + "\n"  ;
+
 }
 
 public static String getPrintableMat(int[][] mat) {
