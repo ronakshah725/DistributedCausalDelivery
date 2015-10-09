@@ -1,0 +1,33 @@
+
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 476
+
+
+Average Latency : 896.8125
+Standard Deviation : 280.15090102255607
+
+
+
+Maximum Buffered Messages : 125
+
+
+
+
+Directly Delivered : 185
+
+
+
+This is an analysis file  after running 10 nodes 
+
+The number of messages totally recieved is dependen on which process decided to multicast to that node. On an average around 300-500  messages are getti ng recieved per node
+
+Also, as soon as the 10 nodes send their 100 messages, termination signal is sent to the controller and controller , after aggregating all the termination signal, tell processes to stop. Because of this  some messages that are recieved are not processed.
+
+ Average latency looks fairly accurate for such a system. Latency  time starts with the time  message was generated , random propogation delay introduced, buffer at that part, when queue processor processes it and the actual time when the message gets delivered or consumed at the node.
+A standard deviation of the range 100 to 300 is seen, showing the introduced difference in delay and processing is proportional to the delay it recieved randomly as propogation delay. 
+
+Maximum buffer size of the range of 100-200 is seen, as potentially 900 messages , are being sent from 9 nodes to each node. 
+
+Ont the other hand out of the recieved messsages, around 300 messages are seen to be directly delivered without buffering 
+
+

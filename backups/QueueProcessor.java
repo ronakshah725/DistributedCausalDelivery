@@ -1,4 +1,4 @@
-package testQueue;
+package backups;
 
 import java.io.Serializable;
 import java.util.Random;
@@ -9,52 +9,69 @@ public class QueueProcessor extends Thread {
 
 	Node n;
 	static Random r;
-	BlockingQueue<BufferMessage> buffer = new ArrayBlockingQueue<>(500, true);
+	BlockingQueue<BufferMessage> buffer = new ArrayBlockingQueue<>(500);
 
 	boolean stopQueue =false;
 	
 	//data collection variables
 	long averageBufferTime;
-	int bufferedMessageCount = 0;
-	int sentWithoutBufferingCount=0; 
+	int bufferedCount = 0;
+	int sentWithoutBufferingCount=0;
 	int maxMessagesBuffered = -1;
+	int directDelivered = 0;
 	
 
 	public QueueProcessor(Node n) {
 		r= new Random();
 		this.n = n;
 	}
+
+	
 	
 	public synchronized boolean getStopQueue() {
 		return stopQueue;
 	}
 
+
+
 	public synchronized void setStopQueue(boolean stopQueue) {
 		this.stopQueue = stopQueue;
 	}
+
+
 
 	public void run() {
 		Protocol m;
 		while (!getStopQueue()) {
 //			
 			try {
+				//System.out.println("in que processor, que not empty and now going to take head and process");
 				if (!n.queue.isEmpty()) {
+					//System.out.println("queue not empty");
+					
+					
+					// mimic propogation delay
+				
+					//System.out.println("sleep in que value : " + (f=getrandom(50, 100)));
+					Thread.sleep( getrandom(50, 200));
 					
 					m = n.queue.take();
 					if(m.type.startsWith("est")||m.type.startsWith("term"))
 					{
 						continue;
 					}
+					//System.out.println("Message taken" + m);
 
 					// check if the message can be delivered the node
 					if (isDeliverable(n, m)) {
-					// if yes, then consume the message and update node matrix
+
+						directDelivered++;
 						deliver(n, m);
 					} else {
 						
-						buffer.put(new BufferMessage(m, System.currentTimeMillis()));
-						bufferedMessageCount++;
-						System.out.println("buffer, current buff: " + buffer.size());
+						buffer.add(new BufferMessage(m, System.currentTimeMillis()));
+						bufferedCount++;
+						System.out.println("added to buffer, current buff: " + buffer.size());
 						//update maximum messages buffered
 						maxMessagesBuffered = maxMessagesBuffered < buffer.size()? buffer.size():maxMessagesBuffered; 
 					}
@@ -67,45 +84,29 @@ public class QueueProcessor extends Thread {
 				e.printStackTrace();
 			}
 		}
+
 	}
+
 	
 	private void deliver(Node n2, Protocol m) {
 
 		n2.componentViseUpdateMyMat( m);
 		consume(n, m);
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-//		if(!buffer.isEmpty()){
-//			//try to empty the queue
+		//if(!buffer.isEmpty())
+			//try to empty the queue
+			//todo
 //			for (BufferMessage bm : buffer){ 
 //				if(isDeliverable(n2, bm.m)){
 //					deliverFromBuff(n2, bm); 
 //					buffer.remove(bm);
 //					System.out.println("removing");
-//				}//recursive
-//			}
-//		}
-
+				//recursive
+			//}		//}
+		
 	}
+
+	
 
 	/*
 	 * OK
@@ -118,6 +119,8 @@ public class QueueProcessor extends Thread {
 		consume(n, bm.m);
 		buffer.remove(bm.insertTS);
 	}
+
+
 
 	private void consume(Node n2, Protocol m) {
 		//n2.recdMSGS += type + "#";

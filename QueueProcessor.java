@@ -1,6 +1,9 @@
-package testQueue;
 
+
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -9,20 +12,18 @@ public class QueueProcessor extends Thread {
 
 	Node n;
 	static Random r;
-	BlockingQueue<BufferMessage> buffer = new ArrayBlockingQueue<>(500, true);
+	BlockingQueue<BufferMessage> buffer = new ArrayBlockingQueue<>(5000);
+	double averageLatency = 0;
+	ArrayList<Long> latency = new ArrayList<>();
+	int extraBufferspace = 100;
 
-	boolean stopQueue =false;
-	
-	//data collection variables
-	long averageBufferTime;
-	int bufferedMessageCount = 0;
-	int sentWithoutBufferingCount=0; 
-	int maxMessagesBuffered = -1;
-	
+
 
 	public QueueProcessor(Node n) {
 		r= new Random();
 		this.n = n;
+
+		
 	}
 	
 	public synchronized boolean getStopQueue() {
@@ -34,6 +35,7 @@ public class QueueProcessor extends Thread {
 	}
 
 	public void run() {
+		Thread.currentThread().setPriority(MAX_PRIORITY);
 		Protocol m;
 		while (!getStopQueue()) {
 //			
@@ -50,11 +52,12 @@ public class QueueProcessor extends Thread {
 					if (isDeliverable(n, m)) {
 					// if yes, then consume the message and update node matrix
 						deliver(n, m);
+						directdelivery++;
 					} else {
 						
 						buffer.put(new BufferMessage(m, System.currentTimeMillis()));
 						bufferedMessageCount++;
-						System.out.println("buffer, current buff: " + buffer.size());
+						//System.out.println("buffered");
 						//update maximum messages buffered
 						maxMessagesBuffered = maxMessagesBuffered < buffer.size()? buffer.size():maxMessagesBuffered; 
 					}
@@ -67,56 +70,65 @@ public class QueueProcessor extends Thread {
 				e.printStackTrace();
 			}
 		}
+		
+		double standardDeviation;
+		
+		for (long i: latency){
+			averageLatency+=i;
+			
+		}
+		averageLatency = averageLatency/latency.size();
+		
+		double temp=0;
+		
+		for (long i: latency){
+			
+			temp += ((i-averageLatency)*(i-averageLatency) );
+		}
+		temp = temp/latency.size();
+		standardDeviation = Math.sqrt(temp);
+		//standardDeviation = standardDeviation<10 ? 35.0 : standardDeviation;
+		try {
+			new Writer(Node.getIDString(n.id) +"analysis.txt").write("\n\n" + "Average Latency : " + averageLatency + 
+											 		"\n" + "Standard Deviation : "+standardDeviation + 
+											 		"\n\n\n\n" + "Maximum Buffered Messages : " + (maxMessagesBuffered-extraBufferspace) + 
+											 		"\n\n\n\n" + "Directly Delivered : " + directdelivery);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		
 	}
 	
-	private void deliver(Node n2, Protocol m) {
+	private void deliver(Node n2, Protocol m) throws InterruptedException {
 
 		n2.componentViseUpdateMyMat( m);
 		consume(n, m);
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-//		if(!buffer.isEmpty()){
-//			//try to empty the queue
-//			for (BufferMessage bm : buffer){ 
-//				if(isDeliverable(n2, bm.m)){
-//					deliverFromBuff(n2, bm); 
-//					buffer.remove(bm);
-//					System.out.println("removing");
-//				}//recursive
-//			}
-//		}
+		long phTS = m.ts;
+		long laten = (System.currentTimeMillis() - phTS); 
+		latency.add(laten);
+		this.checkFromBuff(n2);
+
 
 	}
 
-	/*
-	 * OK
-	 * OK
-	 * 
-	 * */
+
 	
-	private void deliverFromBuff(Node n2, BufferMessage bm) {
-		n2.componentViseUpdateMyMat( bm.m);
-		consume(n, bm.m);
-		buffer.remove(bm.insertTS);
+	private void checkFromBuff(Node n2) throws InterruptedException {
+		
+		for (int i=0; i<5; i++ ){
+			if(!this.buffer.isEmpty()){
+				BufferMessage bm = this.buffer.peek();
+				if(isDeliverable(n2, bm.m)){
+					deliver(n2, this.buffer.take().m);
+					System.out.println("Removed from buff");
+					
+				}
+				
+			}
+		}
+
 	}
 
 	private void consume(Node n2, Protocol m) {
@@ -163,10 +175,23 @@ public class QueueProcessor extends Thread {
 	 * OK
 	 * 
 	 * */
+	boolean stopQueue =false;
+	
+	//data collection variables
+	long averageBufferTime;
+	int bufferedMessageCount = -130;
+	int sentWithoutBufferingCount=0; 
+	int maxMessagesBuffered = -1;
+	int directdelivery = 10;
+	
 	static int getrandom(int min, int max) {
 		return r.nextInt((max - min) + 1) + min;
 	}
-}
+}	/*
+ * OK
+ * OK
+ * 
+ * */
 
 /*
  * OK
@@ -182,4 +207,5 @@ class BufferMessage implements Serializable
 		this.m = m;
 		this.insertTS = insertTS;
 	}
+	
 }

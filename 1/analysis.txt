@@ -1,0 +1,57 @@
+
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 146
+
+
+Average Latency : 131.83333333333334
+Standard Deviation : 36.72608821472218
+
+
+
+Maximum Buffered Messages : 59
+
+
+
+Directly Delivered : 16
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 131
+
+
+Average Latency : 177.5
+Standard Deviation : 7.5
+
+
+
+Maximum Buffered Messages : 48
+
+
+
+Directly Delivered : 12
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 118
+
+
+Average Latency : 54.0
+Standard Deviation : 0.0
+
+
+
+Maximum Buffered Messages : 36
+
+
+
+Directly Delivered : 11
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 122
+
+
+Average Latency : 131.28571428571428
+Standard Deviation : 43.55526632325643
+
+
+
+Maximum Buffered Messages : 34
+
+
+
+Directly Delivered : 16

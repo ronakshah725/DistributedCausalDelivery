@@ -1,3 +1,6 @@
+package broadcast;
+
+
 
 
 import java.io.IOException;
@@ -29,7 +32,7 @@ public class ControllerNode {
 				// System.out.println("in breaker");
 				String nodeInfoString = me.getStoreString();
 				for (int i = 1; i <= me.noOfNodes; i++) {
-					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[me.noOfNodes][me.noOfNodes], "establish"+"sp"+nodeInfoString);
+					ProtocolB p = new ProtocolB(System.currentTimeMillis(), me.id, new int[me.noOfNodes], "establish"+"sp"+nodeInfoString);
 					new NotifyThreads(me, i, p, 0).start();
 				}
 			}
@@ -49,7 +52,7 @@ public class ControllerNode {
 			if (me.down.size() == me.noOfNodes) {
 				System.out.println("Terminating all nodes");
 				for (int i = 1; i <= me.noOfNodes; i++) {
-					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[me.noOfNodes][me.noOfNodes], "terminate");
+					ProtocolB p = new ProtocolB(System.currentTimeMillis(), me.id, new int[me.noOfNodes], "terminate");
 					new NotifyThreads(me, i, p, 0).start();
 				}
 			}
@@ -119,9 +122,9 @@ class NotifyThreads extends Thread {
 
 	ControllerNode n;
 	int dstId;
-	Protocol obj;
+	ProtocolB obj;
 
-	public NotifyThreads(ControllerNode n, int dstId, Protocol obj, int type) {
+	public NotifyThreads(ControllerNode n, int dstId, ProtocolB obj, int type) {
 
 		this.n = n;
 		this.dstId = dstId;
@@ -169,7 +172,7 @@ class Listeners extends Thread {
 			Thread.sleep(500);
 			if ((n.init == true)) // not init phase
 			{
-				Protocol msg = (Protocol) iis.readObject();
+				ProtocolB msg = (ProtocolB) iis.readObject();
 				String ninfo = msg.type = msg.type.split("#")[1];
 				String [] nd = ninfo.split("sp");
 				NodeDef ndef = new NodeDef(Integer.parseInt(nd[0]), nd[1], Integer.parseInt(nd[2]));
@@ -180,7 +183,7 @@ class Listeners extends Thread {
 					n.isListening = false;
 				}
 			} else if (n.init == false) {
-				Protocol msg = (Protocol) iis.readObject();
+				ProtocolB msg = (ProtocolB) iis.readObject();
 				msg.type = msg.type.split("#")[1];
 				int id = Integer.parseInt(msg.type);
 				n.down.put(id, true);
