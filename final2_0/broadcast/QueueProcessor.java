@@ -1,4 +1,5 @@
-
+//broadcast queue processor
+//
 
 
 
@@ -78,7 +79,7 @@ public class QueueProcessor extends Thread {
 					}
 				}
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				
 			}
 		}
 		
@@ -106,7 +107,7 @@ public class QueueProcessor extends Thread {
 											 		"\n\n\n\n" + "Directly Delivered : " + directdelivery);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
 		}
 
 		

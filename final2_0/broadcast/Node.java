@@ -1,5 +1,7 @@
 
 
+// Broadcast Node
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -23,7 +25,7 @@ public class Node {
 		me.store.put(11, new NodeDef(11, me.controllerHostName, me.basePort + 11));
 
 		String nodeInfo = me.id + "sp" + me.host + "sp" + me.port;
-		Protocol p = new Protocol(System.currentTimeMillis(), me.id, me.myMat, "up" + "#" + nodeInfo);
+		ProtocolB p = new ProtocolB(System.currentTimeMillis(), me.id, me.myMat, "up" + "#" + nodeInfo);
 		new writingSocketThread(me, 11, p).start();
 		new ListenHandler(me).start();
 		Thread.sleep(2000); // wait for all to be up
@@ -40,14 +42,14 @@ public class Node {
 		while (!(me.messagesSent == 100)) {
 			
 			Thread.sleep(getrandom(20, 100));
-			if(me.messagesSent%10==0)System.out.println("Multicasted 10 more messages");
+			if(me.messagesSent%10==0)System.out.println("Broadcasted 10 more messages");
 			me.emitMessage();
 			me.messagesSent++;
 			
 		}
 		
 		new writingSocketThread(me, 11,
-				new Protocol(System.currentTimeMillis(), me.id, me.myMat, "down" + "#" + getIDString(me.id))).start();
+				new ProtocolB(System.currentTimeMillis(), me.id, me.myMat, "down" + "#" + getIDString(me.id))).start();
 		System.out.println("sent all messages,  terminating..");
 		
 		//wait for all other threads to terminate
@@ -67,40 +69,33 @@ public class Node {
 
 	private void emitMessage() {
 
-		int x = getrandom(1, noOfNodes-1);
+
 
 		// multicast to x destinations
 
-		for (int i = 1; i <= x; i++) {
+		for (int i = 1; i <= noOfNodes; i++) {
 
 			// for each destination
-			int dstID;
+			int dstID =i;
 
-			// randomly select a node
-			while (true) {
-				// dstID = getrandom(1, 10);
-				dstID = getrandom(1, noOfNodes);
-				// other than itself
-				if (dstID != this.id)
-					break;
-			}
+
 
 			// for node id to matrix mapping [INTERNALS]
 			dstID = dstID - 1;
-			int srcID = this.id - 1;
+
 
 			// update myMat
 
 			// get
-			int myMat[][] = this.getMyMat();
+			int myMat[] = this.getMyMat();
 			// update src dst in matrix
 			
-			myMat[srcID][dstID]++;
+			myMat[dstID]++;
 			// update myMat
 			this.myMatSendUpdate(myMat);
 
 			// generate protocol message
-			Protocol p = new Protocol(System.currentTimeMillis(), this.id, this.getMyMat(), this.messagesSent + "");
+			ProtocolB p = new ProtocolB(System.currentTimeMillis(), this.id, this.getMyMat(), this.messagesSent + "");
 			// send
 
 			dstID = dstID + 1;
@@ -123,24 +118,24 @@ public class Node {
 		return this.established;
 	}
 
-	synchronized int[][] getMyMat() {
+	synchronized int[] getMyMat() {
 
 		return this.myMat;
 	}
 
-	synchronized void componentViseUpdateMyMat(Protocol M) {
+	synchronized void componentViseUpdateMyMat(ProtocolB M) {
 
-		int[][] p = this.getMyMat();
-		int[][] m = M.matrix;
+		int[] p = this.getMyMat();
+		int[] m = M.matrix;
 
 		for (int i = 0; i < this.noOfNodes; i++)
-			for (int j = 0; j < this.noOfNodes; j++) {
-				p[i][j] = m[i][j] > p[i][j] ? m[i][j] : p[i][j];
+{
+				p[i] = m[i] > p[i] ? m[i] : p[i];
 			}
 
 	}
 
-	synchronized void myMatSendUpdate(int[][] newMyMat) {
+	synchronized void myMatSendUpdate(int[] newMyMat) {
 		this.myMat = newMyMat;
 	}
 
@@ -170,38 +165,38 @@ public class Node {
 		this.id = Integer.parseInt(id);
 		try {
 			this.host = InetAddress.getLocalHost().getHostName();
-
+			//this.controllerHostName = this.host;
 		} catch (UnknownHostException e) {
 
-			e.printStackTrace();
+			
 		}
 		this.port = this.basePort + this.id;
-		this.myMat = new int[this.noOfNodes][this.noOfNodes];
+		this.myMat = new int[this.noOfNodes];
 		for (int i = 0; i < this.noOfNodes; i++) {
-			for (int j = 0; j < this.noOfNodes; j++) {
-				this.myMat[i][j] = 0;
+
+				this.myMat[i]= 0;
 			}
-		}
+		
 		this.recdMSGS = "Recieved Messages at " + getIDString(this.id) + " :" + "#";
 
 	}
 
 	int id;
 	String host;
-	final int noOfNodes = 10;
+	final int noOfNodes = 2;
 	int port;
 	int basePort = 9000;
 	 String controllerHostName = "dc11.utdallas.edu";
-
+	//String controllerHostName;
 	boolean established = false;
 	boolean terminate = false;
 
-	int[][] myMat;
+	int[] myMat;
 	String recdMSGS; // from each nod
 	int recdMsgsCount = 0;
 	int messagesSent = 0;
 
-	BlockingQueue<Protocol> queue = new ArrayBlockingQueue<Protocol>(100);
+	BlockingQueue<ProtocolB> queue = new ArrayBlockingQueue<ProtocolB>(100);
 
 	ConcurrentHashMap<Integer, NodeDef> store = new ConcurrentHashMap<Integer, NodeDef>();
 
@@ -231,12 +226,12 @@ class ListenHandler extends Thread {
 			System.out.println("Listeners closed");
 		} catch (IOException e) {
 
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				listener.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				
 			}
 		}
 
@@ -261,8 +256,8 @@ class ListenerService extends Thread {
 			@SuppressWarnings("unused")
 			int id = servSocket.getLocalPort() - n.basePort;
 			while (true) {
-				Protocol msg;
-				msg = (Protocol) iis.readObject();
+				ProtocolB msg;
+				msg = (ProtocolB) iis.readObject();
 				// System.out.println("msg recd : " + msg);
 				if (msg == null)
 					break;
@@ -297,14 +292,14 @@ class ListenerService extends Thread {
 			}
 		} catch (IOException e) {
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				servSocket.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				
 			}
 		}
 	}
@@ -313,9 +308,9 @@ class ListenerService extends Thread {
 class writingSocketThread extends Thread {
 	Node n;
 	int dstId;
-	Protocol p;
+	ProtocolB p;
 
-	public writingSocketThread(Node n, int dstId, Protocol p) {
+	public writingSocketThread(Node n, int dstId, ProtocolB p) {
 
 		this.n = n;
 		this.dstId = dstId;
@@ -337,9 +332,9 @@ class writingSocketThread extends Thread {
 			dstSocket.close();
 
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			
 		} catch (IOException e) {
-			e.printStackTrace();
+			
 		}
 	}
 

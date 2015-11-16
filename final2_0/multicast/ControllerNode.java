@@ -1,7 +1,5 @@
 
 
-
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -31,7 +29,7 @@ public class ControllerNode {
 				// System.out.println("in breaker");
 				String nodeInfoString = me.getStoreString();
 				for (int i = 1; i <= me.noOfNodes; i++) {
-					ProtocolB p = new ProtocolB(System.currentTimeMillis(), me.id, new int[me.noOfNodes], "establish"+"sp"+nodeInfoString);
+					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[me.noOfNodes][me.noOfNodes], "establish"+"sp"+nodeInfoString);
 					new NotifyThreads(me, i, p, 0).start();
 				}
 			}
@@ -51,7 +49,7 @@ public class ControllerNode {
 			if (me.down.size() == me.noOfNodes) {
 				System.out.println("Terminating all nodes");
 				for (int i = 1; i <= me.noOfNodes; i++) {
-					ProtocolB p = new ProtocolB(System.currentTimeMillis(), me.id, new int[me.noOfNodes], "terminate");
+					Protocol p = new Protocol(System.currentTimeMillis(), me.id, new int[me.noOfNodes][me.noOfNodes], "terminate");
 					new NotifyThreads(me, i, p, 0).start();
 				}
 			}
@@ -66,7 +64,7 @@ public class ControllerNode {
 			this.host = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
 			System.out.println("Unknown Host");
-			e.printStackTrace();
+			
 		}
 		this.port = this.basePort + this.id;
 	}
@@ -121,9 +119,9 @@ class NotifyThreads extends Thread {
 
 	ControllerNode n;
 	int dstId;
-	ProtocolB obj;
+	Protocol obj;
 
-	public NotifyThreads(ControllerNode n, int dstId, ProtocolB obj, int type) {
+	public NotifyThreads(ControllerNode n, int dstId, Protocol obj, int type) {
 
 		this.n = n;
 		this.dstId = dstId;
@@ -145,9 +143,9 @@ class NotifyThreads extends Thread {
 			oos.close();
 			dstSocket.close();
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			
 		} catch (IOException e) {
-			e.printStackTrace();
+			
 		}
 	}
 }
@@ -171,7 +169,7 @@ class Listeners extends Thread {
 			Thread.sleep(500);
 			if ((n.init == true)) // not init phase
 			{
-				ProtocolB msg = (ProtocolB) iis.readObject();
+				Protocol msg = (Protocol) iis.readObject();
 				String ninfo = msg.type = msg.type.split("#")[1];
 				String [] nd = ninfo.split("sp");
 				NodeDef ndef = new NodeDef(Integer.parseInt(nd[0]), nd[1], Integer.parseInt(nd[2]));
@@ -182,7 +180,7 @@ class Listeners extends Thread {
 					n.isListening = false;
 				}
 			} else if (n.init == false) {
-				ProtocolB msg = (ProtocolB) iis.readObject();
+				Protocol msg = (Protocol) iis.readObject();
 				msg.type = msg.type.split("#")[1];
 				int id = Integer.parseInt(msg.type);
 				n.down.put(id, true);
@@ -192,16 +190,16 @@ class Listeners extends Thread {
 
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				servSocket.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				
 			}
 		}
 	}

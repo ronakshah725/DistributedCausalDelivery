@@ -1,3 +1,6 @@
+MULTICAST : 
+
+
 
 TOTAL MESSAGES SENT : 100
 TOTAL MESSAGES RECD : 476
@@ -31,3 +34,30 @@ Maximum buffer size of the range of 100-200 is seen, as potentially 900 messages
 Ont the other hand out of the recieved messsages, around 300 messages are seen to be directly delivered without buffering 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+Broadcast:
+
+
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 781
+
+
+Average Latency : 106.075
+Standard Deviation : 48.11932434064302
+
+
+
+Maximum Buffered Messages : 660
+
+
+
+Directly Delivered : 50
+
+For broadcast we can see that many more messages are recieved as also the maximum number of messages getting buffered are very high due to highly concurrrent nature of the broadcast application. Also, less number of messages are directly delivered due to the same. 
+
+Average latency is low because there is not much processing of the random selection of nodes , also the low standard deviation abides by this behaviour. 
+
+In broadcast since only single vector matrix are used, processing of each nodes is much faster as compared to the 2d vectors for causally ordered delivery for multicast

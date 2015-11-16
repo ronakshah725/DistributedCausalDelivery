@@ -1,0 +1,15 @@
+
+TOTAL MESSAGES SENT : 100
+TOTAL MESSAGES RECD : 484
+
+
+Average Latency : 468.75
+Standard Deviation : 495.1666035565987
+
+
+
+Maximum Buffered Messages : 367
+
+
+
+Directly Delivered : 46

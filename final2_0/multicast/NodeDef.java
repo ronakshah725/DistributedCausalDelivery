@@ -1,8 +1,6 @@
 
 
 
-
-
 public class NodeDef {
 	int id;
 	String host;

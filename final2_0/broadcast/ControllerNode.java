@@ -1,4 +1,5 @@
 
+//broadcast controller
 
 
 
@@ -66,7 +67,7 @@ public class ControllerNode {
 			this.host = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
 			System.out.println("Unknown Host");
-			e.printStackTrace();
+			
 		}
 		this.port = this.basePort + this.id;
 	}
@@ -145,9 +146,9 @@ class NotifyThreads extends Thread {
 			oos.close();
 			dstSocket.close();
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			
 		} catch (IOException e) {
-			e.printStackTrace();
+			
 		}
 	}
 }
@@ -192,16 +193,16 @@ class Listeners extends Thread {
 
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				servSocket.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				
 			}
 		}
 	}

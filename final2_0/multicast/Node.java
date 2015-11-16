@@ -170,10 +170,10 @@ public class Node {
 		this.id = Integer.parseInt(id);
 		try {
 			this.host = InetAddress.getLocalHost().getHostName();
-
+			//this.controllerHostName = this.host;
 		} catch (UnknownHostException e) {
 
-			e.printStackTrace();
+			
 		}
 		this.port = this.basePort + this.id;
 		this.myMat = new int[this.noOfNodes][this.noOfNodes];
@@ -192,7 +192,7 @@ public class Node {
 	int port;
 	int basePort = 9000;
 	 String controllerHostName = "dc11.utdallas.edu";
-
+	//String controllerHostName;
 	boolean established = false;
 	boolean terminate = false;
 
@@ -231,12 +231,12 @@ class ListenHandler extends Thread {
 			System.out.println("Listeners closed");
 		} catch (IOException e) {
 
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				listener.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				
 			}
 		}
 
@@ -297,14 +297,14 @@ class ListenerService extends Thread {
 			}
 		} catch (IOException e) {
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				servSocket.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				
 			}
 		}
 	}
@@ -337,9 +337,9 @@ class writingSocketThread extends Thread {
 			dstSocket.close();
 
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			
 		} catch (IOException e) {
-			e.printStackTrace();
+			
 		}
 	}
 
